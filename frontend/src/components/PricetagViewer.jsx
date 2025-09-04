@@ -5,6 +5,15 @@ import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons
 
 const BACKEND = "http://localhost:8000"
 
+const CANVAS_SIZES = [
+  {max:800, width:640, height:360}, // phones/tiny tablets
+  {max:1200, width:800, height:450}, // small laptops 
+  {max:1600, width:1024, height:576}, // mid-size screens
+  {max:Infinity, width:1280, height:720} // large monitors
+]
+
+const {width:canvasWidth, height:canvasHeight} = CANVAS_SIZES.find(s=>window.innerWidth<=s.max);
+
 function OverlayBoxes({boxes, resultById}) {
   return (
   <div>
@@ -21,24 +30,92 @@ function OverlayBoxes({boxes, resultById}) {
   )
 }
 
+const renderReadItem = (s, idx) => {
+  const prefix = "debug_crop: ";
+  if (typeof s === "string" && s.startsWith(prefix)) {
+    const path = s.slice(prefix.length); // e.g. "/static/crops/IMG_001_box3.png"
+    const href = `${BACKEND}${path}`; 
+    return (
+      <li key={idx}>
+        <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 underline">
+          Open debug crop
+        </a>
+      </li>
+    )
+  }
+  return <li key={idx}>{String(s)}</li>
+}
+
 export default function PricetagViewer() {
   const [images, setImages] = useState([]);
   const [current, setCurrent] = useState(0);
   const [boxes, setBoxes] = useState([]);
   const [results, setResults] = useState([]) // [{box_id,...}]
+
   const imgRef = useRef(null);
-  const currentFile = images[current] || null;
-  const baseName = currentFile ? currentFile.substring(0, currentFile.lastIndexOf('.')) : null;
+  const canvasRef = useRef(null);
+  const currentImage = images[current] || null;
+  const baseName = currentImage ? currentImage.substring(0, currentImage.lastIndexOf('.')) : null;
+
+  const drawCurrentImage = () => {
+    const img = imgRef.current;
+    if (!img) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // scale image to fit canvas when ZOOM/PAN not yet applied
+    const scale = Math.min(canvas.width/img.width, canvas.height/img.height);
+
+    const baseOffsetX = (canvas.width-img.width*scale) / 2;
+    const baseOffsetY = (canvas.height-img.height*scale) / 2;
+    const drawWidth = img.width * scale;
+    const drawHeight = img.height * scale;
+    const drawOffsetX = baseOffsetX; 
+    const drawOffsetY = baseOffsetY;
+    ctx.drawImage(img, drawOffsetX, drawOffsetY, drawWidth, drawHeight);
+  };
+
+  const analyze = async () => {
+    if (!currentImage || boxes.length == 0) return;
+    for (const b of boxes) {
+      const payload = {
+        image: currentImage, // test1.jpg
+        box: b.box, // [xn, yn, wn, hn]
+        box_id: b.id 
+      };
+      const {data} = await axios.post(`${BACKEND}/analyze-price-tag`, payload)
+      setResults(prev => {
+        const others = prev.filter(r=>r.box_id !== data.box_id);
+        return [...others, data];
+      })
+    }
+  }
 
   useEffect(() => {
-    axios.get(`${BACKEND}/images`).then(res => setImages(res.data || []));
+    axios.get(`${BACKEND}/images`)
+    .then(res => {
+      setImages(res.data);
+    });
   }, []);
+
+  useEffect(() => {
+    if (images.length == 0) return;
+    const img = new Image();
+    img.src = `${BACKEND}/static/images/${currentImage}`;
+    img.onload = () => {
+      imgRef.current = img;
+      drawCurrentImage();
+    }
+  }, [images, current])
 
   useEffect(() => {
     setBoxes([]);
     setResults([]);
     if (!baseName) return;
-    axios.get(`${BACKEND}/labels/${baseName}`).then(res => setBoxes(res.data || []))
+    axios.get(`${BACKEND}/labels/${baseName}`).then(res => {
+      setBoxes(res.data || [])
+    })
   }, [baseName])
 
   return (
@@ -63,29 +140,38 @@ export default function PricetagViewer() {
       </div>
     </header>
 
-    <main className="grid grid-cols-6 flex-1">
+    <main className="flex flex-1">
       {/* Images */}
-      <div className="col-span-5 flex items-center justify-center">
-        <div className="w-[900px] h-[600px] overflow-auto">
-        { currentFile && (
-          <img ref={imgRef} 
-            className="block"
-            src={`${BACKEND}/static/images/${currentFile}`}
-            alt={currentFile}
-          />
-        )}          
-        </div>        
+      <div className="w-[80%] flex justify-center items-center">
+        <canvas ref={canvasRef} className="border" width={canvasWidth} height={canvasHeight}/>
       </div>
-      <aside className="p-4 border-l">
+      <div className="p-4 border-l w-[20%]">
+        <button className="border rounded px-2 py-1 w-full mb-2 font-semibold cursor-pointer hover:bg-gray-100"
+          onClick={analyze}>
+          Analyze
+        </button>
         <div className="mb-2 font-semibold">Results</div>
         <ul className="space-y-2 text-sm">
-        { results.map(res => (
-        <li>
-
-        </li>
+        { results
+        .slice()
+        .sort((a, b) => a.box_id - b.box_id)
+        .map(res => (
+          <li key={res.box_id} className="border rounded p-2">
+            <div className="font-medium">Box {res.box_id}</div>
+            <div>Main: {res.main_price ?? "-"}</div>
+            <div>Discount: {res.discount_price ?? "-"}</div>
+            {Array.isArray(res.what_was_read) && res.what_was_read.length>0 && (
+              <details className="mt-1">
+                <summary className="cursor-pointer">Details</summary>
+                <ul className="list-disc ml-4">
+                  {res.what_was_read.map((s,i) => renderReadItem(s,i))}
+                </ul>
+              </details>
+            )}
+          </li>
         ))}
         </ul>
-      </aside>
+      </div>
     </main>
   </div>
   </>
