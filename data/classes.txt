@@ -1,1 +1,2 @@
 pricetag
+pricetag_discount

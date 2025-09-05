@@ -85,6 +85,7 @@ export default function PricetagViewer() {
         box_id: b.id 
       };
       const {data} = await axios.post(`${BACKEND}/analyze-price-tag`, payload)
+      console.log(data)
       setResults(prev => {
         const others = prev.filter(r=>r.box_id !== data.box_id);
         return [...others, data];
@@ -160,6 +161,12 @@ export default function PricetagViewer() {
             <div className="font-medium">Box {res.box_id}</div>
             <div>Main: {res.main_price ?? "-"}</div>
             <div>Discount: {res.discount_price ?? "-"}</div>
+            <div>
+              Time Discount: 
+              {res.time_discount
+                ? `${res.time_discount.time_start || "-"} - ${res.time_discount.time_end || "-"}`
+                : "-"}
+            </div>
             {Array.isArray(res.what_was_read) && res.what_was_read.length>0 && (
               <details className="mt-1">
                 <summary className="cursor-pointer">Details</summary>
