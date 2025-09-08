@@ -1,15 +1,15 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class TimeDiscount(BaseModel):
     time_start: str|None = None 
-    time_end: str|None = None 
+    time_end: str|None = None
 
 class Pricetag(BaseModel):
   box_id: int 
-  main_price: str|None = None 
-  discount_price: str|None = None
-  time_discount: TimeDiscount|None = None 
+  main_price: Optional[str] = None
+  discount_price: Optional[str] = None
+  time_discount: Optional[TimeDiscount] = None
   what_was_read: List[str] = Field(default_factory=list)
 
 class AnalyzeRequest(BaseModel):

@@ -159,8 +159,8 @@ export default function PricetagViewer() {
         .map(res => (
           <li key={res.box_id} className="border rounded p-2">
             <div className="font-medium">Box {res.box_id}</div>
-            <div>Main: {res.main_price ?? "-"}</div>
-            <div>Discount: {res.discount_price ?? "-"}</div>
+            <div>Main: {res.main_price ?? "Không có"}</div>
+            <div>Discount: {res.discount_price ?? "Không có"}</div>
             <div>
               Time Discount: 
               {res.time_discount
