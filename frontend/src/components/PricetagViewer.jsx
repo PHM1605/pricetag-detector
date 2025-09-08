@@ -152,7 +152,7 @@ export default function PricetagViewer() {
           Analyze
         </button>
         <div className="mb-2 font-semibold">Results</div>
-        <ul className="space-y-2 text-sm">
+        <ul className="space-y-2 text-sm max-h-[calc(100vh-200px)] overflow-y-auto">
         { results
         .slice()
         .sort((a, b) => a.box_id - b.box_id)
