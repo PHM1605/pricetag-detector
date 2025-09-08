@@ -54,6 +54,7 @@ export default function PricetagViewer() {
 
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
+  const boxesRef = useRef(null);
   const currentImage = images[current] || null;
   const baseName = currentImage ? currentImage.substring(0, currentImage.lastIndexOf('.')) : null;
 
@@ -74,8 +75,22 @@ export default function PricetagViewer() {
     const drawOffsetX = baseOffsetX; 
     const drawOffsetY = baseOffsetY;
     ctx.drawImage(img, drawOffsetX, drawOffsetY, drawWidth, drawHeight);
-  };
 
+    //draw boxes
+    boxes.forEach(box => {
+      const [xn, yn, wn, hn] = box.box;
+      console.log({xn, yn, wn, hn})
+
+      const x = drawOffsetX + xn * drawWidth;
+      const y = drawOffsetY + yn * drawHeight;
+      const w = wn * drawWidth;
+      const h = hn * drawHeight;
+
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+    });
+  }
   const analyze = async () => {
     if (!currentImage || boxes.length == 0) return;
     for (const b of boxes) {
