@@ -140,13 +140,14 @@ async def analyze_price_tag(payload:AnalyzeRequest=Body(...)):
     try: 
       data = json.loads(text)
     except json.JSONDecodeError:
-      data = {"main_price": None, "discount_price": None,"discount_type": None, "time_discount": None, "what_was_read": [text]}
+      data = {"product_name": None,"main_price": None, "discount_price": None,"discount_type": None, "time_discount": None, "what_was_read": [text]}
     what = data.get("what_was_read") or []
     if saved_path:
       what = [f"debug_crop: /static/crops/{saved_path.name}", *what]
     print(data)
     return Pricetag(
       box_id = payload.box_id,
+      product_name = data.get("product_name"),
       main_price = data.get("main_price"),
       discount_price = data.get("discount_price"),
       discount_type = data.get("discount_type"),
@@ -157,8 +158,11 @@ async def analyze_price_tag(payload:AnalyzeRequest=Body(...)):
     debug = [f"debug_crop: /static/crops/{saved_path.name}"] if saved_path else []
     return Pricetag(
       box_id = payload.box_id,
+      product_name = None,
       main_price = None,
-      discount_price = None, 
+      discount_price = None,
+      discount_type = None,
+      time_discount = None,
       what_was_read=[f"fallback: {type(e).__name__}"]
     )
 
