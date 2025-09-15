@@ -144,7 +144,6 @@ async def analyze_price_tag(payload:AnalyzeRequest=Body(...)):
     what = data.get("what_was_read") or []
     if saved_path:
       what = [f"debug_crop: /static/crops/{saved_path.name}", *what]
-    print(data)
     return Pricetag(
       box_id = payload.box_id,
       product_name = data.get("product_name"),

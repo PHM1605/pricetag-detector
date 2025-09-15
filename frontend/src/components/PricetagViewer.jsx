@@ -14,22 +14,6 @@ const CANVAS_SIZES = [
 
 const {width:canvasWidth, height:canvasHeight} = CANVAS_SIZES.find(s=>window.innerWidth<=s.max);
 
-function OverlayBoxes({boxes, resultById}) {
-  return (
-  <div>
-  {boxes.map(box => {
-    return (
-      <div key={box.id} className="pointer-events-auto">
-        <div className="h-full w-full">
-          box.id
-        </div>
-      </div>
-    )
-  })}
-  </div>
-  )
-}
-
 const renderReadItem = (s, idx) => {
   const prefix = "debug_crop: ";
   if (typeof s === "string" && s.startsWith(prefix)) {
@@ -56,6 +40,33 @@ export default function PricetagViewer() {
   const canvasRef = useRef(null);
   const currentImage = images[current] || null;
   const baseName = currentImage ? currentImage.substring(0, currentImage.lastIndexOf('.')) : null;
+  const drawRef = useRef({scale:1, ox:0, oy:0, imgW:0, imgH:0});
+
+  const drawBoxes = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const {scale, offsetX, offsetY, imgW, imgH} = drawRef.current;
+    ctx.lineWidth = 2;
+    
+    boxes.forEach(box => {
+      const [xn, yn, wn, hn] = box.box;
+      // convert to image pixel coords
+      const wImg = wn * imgW;
+      const hImg = hn * imgH;
+      const xImg = xn * imgW - wImg / 2;
+      const yImg = yn * imgH - hImg / 2;
+      // convert to canvas coordinates
+      const x = offsetX + xImg*scale;
+      const y = offsetY + yImg*scale;
+      const w = wImg * scale;
+      const h = hImg * scale;
+
+      // choose color: green if pricetag analyzed, red otherwise
+      const hasResult = results.some(res => res.box_id === box.id)
+      ctx.strokeStyle = hasResult ? "limegreen" : "red";
+      ctx.strokeRect(x, y, w, h);
+    })
+  }
 
   const drawCurrentImage = () => {
     const img = imgRef.current;
@@ -66,14 +77,21 @@ export default function PricetagViewer() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // scale image to fit canvas when ZOOM/PAN not yet applied
     const scale = Math.min(canvas.width/img.width, canvas.height/img.height);
-
-    const baseOffsetX = (canvas.width-img.width*scale) / 2;
-    const baseOffsetY = (canvas.height-img.height*scale) / 2;
     const drawWidth = img.width * scale;
     const drawHeight = img.height * scale;
-    const drawOffsetX = baseOffsetX; 
-    const drawOffsetY = baseOffsetY;
-    ctx.drawImage(img, drawOffsetX, drawOffsetY, drawWidth, drawHeight);
+    const baseOffsetX = (canvas.width-drawWidth) / 2;
+    const baseOffsetY = (canvas.height-drawHeight) / 2;
+    
+    drawRef.current = {
+      scale,
+      offsetX: baseOffsetX,
+      offsetY: baseOffsetY,
+      imgW: img.width,
+      imgH: img.height
+    };
+
+    ctx.drawImage(img, baseOffsetX, baseOffsetY, drawWidth, drawHeight);
+    drawBoxes();
   }
   const analyze = async () => {
     if (!currentImage || boxes.length == 0) return;
@@ -117,6 +135,11 @@ export default function PricetagViewer() {
       setBoxes(res.data || [])
     })
   }, [baseName])
+
+  useEffect(() => {
+    if (!imgRef.current) return;
+    drawCurrentImage();
+  }, [boxes, results])
 
   return (
   <>
