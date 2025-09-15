@@ -180,9 +180,10 @@ export default function PricetagViewer() {
         .sort((a, b) => a.box_id - b.box_id)
         .map(res => (
           <li key={res.box_id} className="border rounded p-2">
-            <div className="font-medium">Box {res.box_id}</div>
+            <div className="font-medium">Box {res.product_name}</div>
             <div>Main: {res.main_price ?? "-"}</div>
             <div>Discount: {res.discount_price ?? "-"}</div>
+            <div>Type: {res.discount_type ?? "-"}</div>
             <div>
               Time Discount: 
               {res.time_discount
