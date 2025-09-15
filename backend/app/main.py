@@ -142,6 +142,7 @@ async def analyze_price_tag(payload:AnalyzeRequest=Body(...)):
     except json.JSONDecodeError:
       data = {"product_name": None,"main_price": None, "discount_price": None,"discount_type": None, "time_discount": None, "what_was_read": [text]}
     what = data.get("what_was_read") or []
+    print(data)
     if saved_path:
       what = [f"debug_crop: /static/crops/{saved_path.name}", *what]
     return Pricetag(

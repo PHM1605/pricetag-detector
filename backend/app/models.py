@@ -7,8 +7,10 @@ class TimeDiscount(BaseModel):
 
 class Pricetag(BaseModel):
   box_id: int 
+  product_name: Optional[str] = None
   main_price: Optional[int] = None
   discount_price: Optional[int] = None
+  discount_type: Optional[str] = None
   time_discount: Optional[TimeDiscount] = None
   what_was_read: List[str] = Field(default_factory=list)
 
