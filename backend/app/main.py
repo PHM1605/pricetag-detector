@@ -109,7 +109,8 @@ def get_images():
 
 SYSTEM_PROMPT = (
   "You are a price reader. Extract prices and time discount from a price tag image. Currency is Vietnam dong"
-  "Return strict JSON with fields: main_price (integer or null), discount_price (integer or null), and time_discount (object or null with fields: time_start (string or null), time_end (string or null)), and what_was_read (array of strings)."
+  "Return strict JSON with fields: product_name (string or null), main_price (integer or null), discount_price (integer or null), discount_type (string or null), and time_discount (object or null with fields: time_start (string or null), time_end (string or null)), and what_was_read (array of strings)."
+  "discount_type can be 'price_drop' (if Image has two prices from 1 product), 'percent_off' (if image shows the percentage discount price for each product), 'buy_x_get_y' (if I buy product x I get product y as gift or Image have 'Tặng', 'Kèm theo'), or null."
   "Do NOT include any other text."
 )
 
@@ -139,15 +140,16 @@ async def analyze_price_tag(payload:AnalyzeRequest=Body(...)):
     try: 
       data = json.loads(text)
     except json.JSONDecodeError:
-      data = {"main_price": None, "discount_price": None, "time_discount": None, "what_was_read": [text]}
+      data = {"main_price": None, "discount_price": None,"discount_type": None, "time_discount": None, "what_was_read": [text]}
     what = data.get("what_was_read") or []
     if saved_path:
       what = [f"debug_crop: /static/crops/{saved_path.name}", *what]
-    
+    print(data)
     return Pricetag(
       box_id = payload.box_id,
       main_price = data.get("main_price"),
       discount_price = data.get("discount_price"),
+      discount_type = data.get("discount_type"),
       time_discount = data.get("time_discount"),
       what_was_read = what
     )
